@@ -130,7 +130,7 @@ function reloadConfig() {
   const configuration = vscode.workspace.getConfiguration("calva.highlight", (!!activeEditor) ? activeEditor.document.uri : null);
 
   if (!isEqual(rainbowColors, configuration.get<string[]>("bracketColors"))) {
-    rainbowColors = configuration.get<string[]>("bracketColors") || [["#000", "#ccc"], "#0098e6", "#e16d6d", "#3fa455", "#c968e6", "#999", "#ce7e00"];
+    rainbowColors = configuration.get<string[]>("bracketColors") || ["#0098e6", "#e16d6d", "#3fa455", "#c968e6", "#999", "#ce7e00"];
     dirty = true;
   }
 
@@ -192,18 +192,18 @@ function updateRainbowBrackets() {
 
   if (dirty) reset_styles();
 
-  const doc = activeEditor.document,
-    mirrorDoc = docMirror.getDocument(doc),
-    rainbow = rainbowTypes.map(() => []),
-    rainbowGuides = rainbowTypes.map(() => []),
-    misplaced = [],
-    comment_forms = [],
-    ignores = [],
-    len = rainbowTypes.length,
-    colorsEnabled = enableBracketColors && len > 0,
-    guideColorsEnabled = useRainbowIndentGuides && len > 0,
-    activeGuideEnabled = highlightActiveIndent && len > 0,
-    colorIndex = cycleBracketColors ? (i => i % len) : (i => Math.min(i, len - 1));
+  const doc = activeEditor.document;
+  const mirrorDoc = docMirror.getDocument(doc);
+  const rainbow = rainbowTypes.map(() => []);
+  const rainbowGuides = rainbowTypes.map(() => []);
+  const misplaced = [];
+  const comment_forms = [];
+  const ignores = [];
+  const len = rainbowTypes.length;
+  const colorsEnabled = enableBracketColors && len > 0;
+  const guideColorsEnabled = useRainbowIndentGuides && len > 0;
+  const activeGuideEnabled = highlightActiveIndent && len > 0;
+  const colorIndex = cycleBracketColors ? i => i % len: i => Math.min(i, len - 1);
 
   let in_comment_form = false,
     stack: StackItem[] = [],
@@ -279,9 +279,9 @@ function updateRainbowBrackets() {
           end = activeEditor.document.positionAt(cursor.offsetEnd),
           openRange = new Range(start, end),
           openString = activeEditor.document.getText(openRange);
-        if (colorsEnabled) {
+        if (colorsEnabled && stack_depth > 0) {
           const decoration = { range: openRange };
-          rainbow[colorIndex(stack_depth)].push(decoration);
+          rainbow[colorIndex(stack_depth - 1)].push(decoration);
         }
         ++stack_depth;
         stack.push({ char: openString, start: start, end: end, pair_idx: undefined, opens_comment_form: false });
@@ -310,16 +310,18 @@ function updateRainbowBrackets() {
             pairsForward.set(position_str(activeEditor.document.positionAt(startOffset + i)), [opening, closing]);
           }
           --stack_depth;
-          if (colorsEnabled) {
-            rainbow[colorIndex(stack_depth)].push(decoration);
+          if (colorsEnabled && stack_depth > 0) {
+            rainbow[colorIndex(stack_depth - 1)].push(decoration);
           }
           if (guideColorsEnabled || activeGuideEnabled) {
             const matchPos = pos.translate(0, 1);
             const openSelection = matchBefore(new vscode.Selection(matchPos, matchPos));
             const openSelectionPos = openSelection[0].start;
-            const guideLength = decorateGuide(doc, openSelectionPos, matchPos, rainbowGuides[colorIndex(stack_depth)]);
-            if (guideLength > 0) {
-              placedGuidesColor.set(position_str(openSelectionPos), colorIndex(stack_depth))
+            if (stack_depth > 0) {
+              const guideLength = decorateGuide(doc, openSelectionPos, matchPos, rainbowGuides[colorIndex(stack_depth - 1)]);
+              if (guideLength > 0) {
+                placedGuidesColor.set(position_str(openSelectionPos), colorIndex(stack_depth - 1))
+              }
             }
           }
           continue;

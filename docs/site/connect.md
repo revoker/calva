@@ -10,7 +10,7 @@ Jack-in supports both CLJ and for CLJS, and has built-in configurations for **Le
 
 It works like so:
 
-1. Open your project root directory in VS Code.
+1. Open your project root directory in VS Code (containing mandatory deps.edn or project.clj)
 1. Issue the command **Start a Project REPL and Connect**: `ctrl+alt+c ctrl+alt+j`.
 1. Answer the quick-pick prompts telling Calva about project types and what profiles to start.
 
